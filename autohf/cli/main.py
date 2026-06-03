@@ -269,11 +269,46 @@ def info() -> None:
             "[bold]CLI:[/bold]\n"
             '  autohf train "sentiment analysis"\n'
             '  autohf train "NER" --preset best_quality\n'
-            '  autohf search "question answering" --models',
+            '  autohf search "question answering" --models\n'
+            '  autohf route "Build an AI that detects fake reviews"\n'
+            '  autohf version',
             title="📝 Quick Start",
             border_style="dim",
         )
     )
+
+
+@app.command()
+def route(
+    task: str = typer.Argument(
+        ...,
+        help="Natural-language task description.",
+    ),
+    router: str = typer.Option(
+        "auto",
+        "--router",
+        help="Routing strategy: 'auto', 'keyword', 'openai', or 'gemma'.",
+    ),
+) -> None:
+    """🎯 Route task and detect ML task type, label, and keywords."""
+    from autohf.agents.task_agent import detect_task
+    try:
+        res = detect_task(task, router=router)
+        console.print()
+        console.print(f"[bold green]✓[/bold green] Detected Task Type: [bold]{res.task_type}[/bold]")
+        console.print(f"  Label: {res.task_label}")
+        console.print(f"  Confidence: {res.confidence}")
+        console.print(f"  Keywords: {', '.join(res.keywords)}")
+        console.print(f"  Problem Type: {res.problem_type}")
+    except Exception as e:
+        console.print(f"\n[bold red]❌ Error:[/bold red] {e}")
+        raise typer.Exit(code=1)
+
+
+@app.command()
+def version() -> None:
+    """ℹ️ Show AutoHF version."""
+    console.print("[bold cyan]AutoHF v0.1.0[/bold cyan]")
 
 
 # ---------------------------------------------------------------------------
