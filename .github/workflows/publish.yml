@@ -15,7 +15,9 @@ jobs:
   build-and-publish:
     name: Build and Publish to PyPI
     runs-on: ubuntu-latest
-    environment: release
+    environment:
+      name: pypi
+      url: https://pypi.org/p/autohf
     permissions:
       # CRITICAL: This permission is required for OIDC trusted publishing
       id-token: write
