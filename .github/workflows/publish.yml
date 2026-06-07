@@ -39,3 +39,7 @@ jobs:
 
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}
+        # Set to true if you want to bypass errors or see verbose output
+        verbose: true
