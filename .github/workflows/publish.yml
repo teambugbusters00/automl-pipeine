@@ -1,47 +1,38 @@
 name: Publish to PyPI
 
 on:
-  release:
-    types: [published]
   push:
     tags:
       - 'v*'
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
   build-and-publish:
-    name: Build and Publish to PyPI
     runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/p/autohf
     permissions:
-      # CRITICAL: This permission is required for OIDC trusted publishing
-      id-token: write
+      contents: read
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.10"
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
-    - name: Install Build Dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install build
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
 
-    - name: Build Package
-      run: python -m build
+      - name: Build distribution
+        run: python -m build
 
-    - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        password: ${{ secrets.PYPI_API_TOKEN }}
-        # Set to true if you want to bypass errors or see verbose output
-        verbose: true
+      - name: Check distribution
+        run: twine check dist/*
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          verbose: true
