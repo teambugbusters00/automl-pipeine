@@ -1,6 +1,5 @@
 ---
 title: AutoML AutoDB Select Pipeline
-emoji: 🚀
 colorFrom: blue
 colorTo: indigo
 sdk: docker
@@ -8,56 +7,43 @@ app_port: 7860
 pinned: false
 ---
 
-# 🚀 AutoHF
+# AutoHF
 
 **One-line AutoML: from idea to trained model using Hugging Face + AutoGluon.**
 
-AutoHF is an autonomous machine learning pipeline that takes a natural language description of a task (e.g., "sentiment analysis") and automatically finds the best datasets on Hugging Face, ranks them by quality, and trains a state-of-the-art model using AutoGluon.
+AutoHF is an autonomous machine learning pipeline that takes a natural language description of a task (e.g., "sentiment analysis") and automatically finds the best datasets on Hugging Face, ranks [...]
 
 ---
 
-## ✨ Features
+## Features
 
-- **🔍 Intent-to-Task:** Automatically detects ML task types (classification, regression, etc.) and keywords from natural language.
-- **📦 Autonomous Dataset Discovery:** Searches the Hugging Face Hub for relevant datasets using multi-strategy search.
-- **🏆 Intelligent Ranking:** Ranks datasets based on quality signals like downloads, likes, and metadata completeness.
-- **🏋️ Automated Training:** Leverages AutoGluon to train high-quality models with minimal configuration.
-- **🧬 Agentic Architecture:** Inspired by patterns from **AutoGen**, **LangGraph**, and **OpenHands** for robust state management and collaboration.
+- **Intent-to-Task:** Automatically detects ML task types (classification, regression, etc.) and keywords from natural language.
+- **Autonomous Dataset Discovery:** Searches the Hugging Face Hub for relevant datasets using multi-strategy search.
+- **Intelligent Ranking:** Ranks datasets based on quality signals like downloads, likes, and metadata completeness.
+- **Automated Training:** Leverages AutoGluon to train high-quality models with minimal configuration.
+- **Agentic Architecture:** Inspired by patterns from **AutoGen**, **LangGraph**, and **OpenHands** for robust state management and collaboration.
 
 ---
 
-## 🛠️ Internal Workflow
+## Internal Workflow
 
-The following diagram shows how AutoHF orchestrates the pipeline from user input to a trained model:
+The following section describes how AutoHF orchestrates the pipeline from user input to a trained model:
 
-```mermaid
-graph TD
-    User([User Input: 'sentiment analysis']) --> CLI[CLI / Python API]
-    CLI --> Orchestrator[AutoHF Orchestrator]
-    
-    subgraph "Autonomous Pipeline (LangGraph-inspired States)"
-        Orchestrator --> State1[Detecting Task]
-        State1 --> TaskAgent[TaskAgent: Detects task type & keywords]
-        
-        TaskAgent --> State2[Searching Datasets]
-        State2 --> DatasetAgent[DatasetAgent: Searches HF Hub]
-        
-        DatasetAgent --> State3[Ranking Datasets]
-        State3 --> Ranker[DatasetRanker: Ranks by quality signals]
-        
-        Ranker --> State4[Loading & Profiling]
-        State4 --> Loader[DatasetAgent: Loads best candidate & profiles]
-        
-        Loader --> State5[Training]
-        State5 --> Trainer[AutoGluonTrainer: Trains & Optimizes]
-    end
-    
-    Trainer --> State6[Completed]
-    State6 --> Result[TrainResult: Model + Metrics]
-    Result --> User
-```
+### Pipeline State Machine
 
-## 🏗️ Project Structure
+AutoHF manages the following states during execution:
+
+1. **IDLE**: Initial state, waiting for input
+2. **DETECTING_TASK**: TaskAgent identifies task type and keywords
+3. **SEARCHING_DATASETS**: DatasetAgent searches the Hugging Face Hub using 3-strategy approach
+4. **RANKING_DATASETS**: DatasetRanker scores candidates using keyword composite scoring or semantic ranking
+5. **LOADING_DATASET**: Dataset is loaded and verified
+6. **PROFILING_DATASET**: Dataset statistics and samples are profiled
+7. **TRAINING**: AutoGluonTrainer trains and optimizes the model
+8. **EVALUATING**: Model metrics are evaluated
+9. **COMPLETED**: Pipeline completes and returns TrainResult
+
+## Project Structure
 
 AutoHF follows a modular, layered architecture organized into six core packages:
 
@@ -103,7 +89,7 @@ README.md                       # This file
 | `training` | Model training, evaluation, and inference | `train_model`, `load_predictor`, `predict` |
 | `cli` | User-facing command-line interface | `train`, `search`, `info` |
 
-## 🏗️ Architecture & Patterns
+## Architecture & Patterns
 
 AutoHF is built using modern software engineering patterns for AI:
 
@@ -113,116 +99,6 @@ AutoHF is built using modern software engineering patterns for AI:
 - **Tabular Power:** Uses **AutoGluon** as the underlying engine for robust, automated model selection and hyperparameter tuning.
 
 ---
-
-## 🛠️ Internal Workflow
-
-### Pipeline State Machine
-
-The following diagram shows how AutoHF orchestrates the pipeline from user input to a trained model, including retry logic and ranking selection:
-
-```mermaid
-graph TD
-    User([User Input: 'sentiment analysis']) --> CLI[CLI / Python API]
-    CLI --> Orchestrator[AutoHF Orchestrator]
-    
-    subgraph "Autonomous Pipeline (LangGraph-inspired States)"
-        Orchestrator --> State1[IDLE]
-        State1 --> State2[DETECTING_TASK]
-        State2 --> TaskAgent[TaskAgent: keyword / OpenAI router]
-        TaskAgent --> State3[SEARCHING_DATASETS]
-        State3 --> DatasetAgent[DatasetAgent: 3-strategy HF Hub search]
-        DatasetAgent --> State4[RANKING_DATASETS]
-        State4 --> RankerDecision{Ranker?}
-        RankerDecision -->|default| DatasetRanker[DatasetRanker: keyword composite scoring]
-        RankerDecision -->|search extras| SemanticRanker[SemanticRanker: vector + Cross-Encoder]
-        DatasetRanker --> State5[LOADING_DATASET]
-        SemanticRanker --> State5
-        State5 --> LoadRetry{Load OK?}
-        LoadRetry -->|No| DatasetAgent
-        LoadRetry -->|Yes| State6[PROFILING_DATASET]
-        State6 --> Profile[profile_dataset: stats + samples]
-        Profile --> State7[TRAINING]
-        State7 --> Trainer[AutoGluonTrainer: TabularPredictor.fit]
-    end
-    
-    Trainer --> State8[EVALUATING]
-    State8 --> State9[COMPLETED]
-    State9 --> Result[TrainResult: model + metrics + paths]
-    Result --> User
-```
-
-### Class / Module Dependency Diagram
-
-```mermaid
-classDiagram
-    class AutoHF {
-        -config: AutoHFConfig
-        -task_agent: TaskAgent
-        -dataset_agent: DatasetAgent
-        +train(task_description) TrainResult
-        +search(task_description) list[DatasetCandidate]
-    }
-    
-    class AutoHFConfig {
-        +preset: Preset
-        +time_limit: int
-        +max_rows: int
-        +problem_type: ProblemType
-    }
-    
-    class TaskAgent {
-        +detect_task(description) TaskInfo
-        +list_supported_tasks()
-    }
-    
-    class DatasetAgent {
-        +find_datasets(task_type, keywords) list[DatasetCandidate]
-        +load(dataset_id, config) DataFrame + cols
-        +profile_dataset(df, text_col, label_col) DatasetProfile
-    }
-    
-    class DatasetRanker {
-        +rank_datasets(candidates, keywords) list[DatasetCandidate]
-    }
-    
-    class SemanticRanker {
-        +rank(candidates, problem_statement, keywords) list[DatasetCandidate]
-    }
-    
-    class AutoGluonTrainer {
-        +train_model(df, config, label) TrainResult
-        +load_predictor(path) TabularPredictor
-        +predict(predictor, df) Series
-    }
-    
-    class TrainResult {
-        +best_model_name: str
-        +metrics: dict
-        +model_path: str
-        +leaderboard: DataFrame
-    }
-    
-    class DatasetCandidate {
-        +id: str
-        +description: str
-        +downloads: int
-        +likes: int
-        +tags: list[str]
-        +score: float
-    }
-
-    CLI --> AutoHF : Uses
-    AutoHF --> AutoHFConfig : Configures
-    AutoHF --> TaskAgent : Orchestrates
-    AutoHF --> DatasetAgent : Orchestrates
-    AutoHF --> DatasetRanker : Uses
-    AutoHF --> SemanticRanker : Uses [optional]
-    AutoHF --> AutoGluonTrainer : Triggers
-    AutoHF --> TrainResult : Returns
-    DatasetAgent --> DatasetCandidate : Produces
-    DatasetRanker --> DatasetCandidate : Ranks
-    SemanticRanker --> DatasetCandidate : Ranks
-```
 
 ### Installation
 
@@ -266,7 +142,7 @@ print(f"Model saved at: {result.model_path}")
 
 ---
 
-## 📋 Presets
+## Presets
 
 AutoHF provides several presets inspired by AutoGluon to balance speed and quality:
 
@@ -280,18 +156,7 @@ AutoHF provides several presets inspired by AutoGluon to balance speed and quali
 
 ---
 
-## 🏗️ Architecture & Patterns
-
-AutoHF is built using modern software engineering patterns for AI:
-
-- **State Management:** Uses a typed state machine (via `PipelineState`) inspired by **LangGraph** to track progress and handle transitions.
-- **Agent Collaboration:** Employs specialized agents (**TaskAgent**, **DatasetAgent**) similar to **AutoGen** to separate concerns.
-- **Autonomous Execution:** Implements retry logic and multi-strategy discovery patterns found in **OpenHands**.
-- **Tabular Power:** Uses **AutoGluon** as the underlying engine for robust, automated model selection and hyperparameter tuning.
-
----
-
-## 🗺️ Project Roadmap
+## Project Roadmap
 
 Here is the planned development roadmap for AutoHF. Contributions and suggestions are welcome!
 
@@ -336,13 +201,13 @@ Here is the planned development roadmap for AutoHF. Contributions and suggestion
 
 ---
 
-## 📜 License
+## License
 
 MIT License. See `LICENSE` for details.
 
 ---
 
-## 🤖 Auto-Push Scripts
+## Auto-Push Scripts
 
 AutoHF includes scripts for automated git pushing:
 
