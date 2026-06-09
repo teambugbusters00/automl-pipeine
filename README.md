@@ -1,3 +1,7 @@
+GitHub Repository: https://github.com/teambugbusters00/automl-pipeine
+GitHub Actions Run Monitor: https://github.com/teambugbusters00/automl-pipeine/actions
+Hugging Face Space: https://huggingface.co/spaces/jarvisemitra/automlautodbselectpipeline
+PyPI Project Page: https://pypi.org/project/autohf/
 ---
 title: AutoML AutoDB Select Pipeline
 colorFrom: blue
