@@ -306,9 +306,99 @@ def route(
 
 
 @app.command()
+def chat(
+    prompt: Optional[str] = typer.Argument(
+        None,
+        help="Single-shot prompt to pass to Gemma. If empty, starts interactive REPL.",
+    ),
+    model: str = typer.Option(
+        "google/gemma-4-E2B-it",
+        "--model", "-m",
+        help="Gemma model ID to use for chat.",
+    ),
+    system_prompt: str = typer.Option(
+        "You are Gemma, a helpful AI assistant developed by Google.",
+        "--system", "-s",
+        help="System prompt to guide the conversation.",
+    ),
+) -> None:
+    """💬 Start a chat session or run a single prompt with a local Gemma model.
+
+    Examples:
+      autohf chat "Explain quantum computing simply"
+      autohf chat --model google/gemma-4-E2B-it
+    """
+    from autohf.agents.chat_agent import GemmaChatAgent
+
+    console.print()
+    if prompt:
+        # Single-shot prompt
+        try:
+            agent = GemmaChatAgent(model_id=model, system_prompt=system_prompt)
+            with console.status(f"[bold green]Loading local Gemma model '{model}'...[/bold green]", spinner="dots"):
+                agent.load()
+            with console.status("[bold yellow]Gemma is thinking...[/bold yellow]", spinner="dots"):
+                response = agent.generate(prompt, [])
+            console.print(Panel(response, title="[bold green]Gemma[/bold green]", border_style="green"))
+        except Exception as e:
+            console.print(f"[bold red]❌ Error:[/bold red] {e}")
+            raise typer.Exit(code=1)
+        return
+
+    # Interactive REPL
+    console.print(
+        Panel.fit(
+            "[bold cyan]💬 AutoHF Gemma Chat[/bold cyan]\n"
+            f"[dim]Model: {model}[/dim]\n"
+            "[dim]Commands: 'exit' or 'quit' to end session | 'clear' to clear history[/dim]",
+            border_style="cyan",
+        )
+    )
+
+    try:
+        agent = GemmaChatAgent(model_id=model, system_prompt=system_prompt)
+        with console.status(f"[bold green]Loading local Gemma model '{model}'...[/bold green]", spinner="dots"):
+            agent.load()
+        console.print("[bold green]✓ Model loaded successfully![/bold green] Let's chat!\n")
+    except Exception as e:
+        console.print(f"[bold red]❌ Failed to load model:[/bold red] {e}")
+        raise typer.Exit(code=1)
+
+    chat_history = []
+    while True:
+        try:
+            user_input = console.input("[bold cyan]You > [/bold cyan]").strip()
+            if not user_input:
+                continue
+            if user_input.lower() in ("exit", "quit"):
+                console.print("[dim]Goodbye![/dim]")
+                break
+            if user_input.lower() == "clear":
+                chat_history.clear()
+                console.print("[dim]Chat history cleared.[/dim]\n")
+                continue
+
+            with console.status("[bold yellow]Gemma is thinking...[/bold yellow]", spinner="dots"):
+                response = agent.generate(user_input, chat_history)
+
+            console.print()
+            console.print(Panel(response, title="[bold green]Gemma[/bold green]", border_style="green"))
+            console.print()
+
+            chat_history.append({"role": "user", "content": user_input})
+            chat_history.append({"role": "assistant", "content": response})
+
+        except KeyboardInterrupt:
+            console.print("\n[dim]Goodbye![/dim]")
+            break
+        except Exception as e:
+            console.print(f"\n[bold red]❌ Error: {e}[/bold red]\n")
+
+
+@app.command()
 def version() -> None:
     """ℹ️ Show AutoHF version."""
-    console.print("[bold cyan]AutoHF v0.1.0[/bold cyan]")
+    console.print("[bold cyan]AutoHF v1.0.0[/bold cyan]")
 
 
 # ---------------------------------------------------------------------------
@@ -317,3 +407,4 @@ def version() -> None:
 
 if __name__ == "__main__":
     app()
+

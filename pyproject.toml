@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "autohf"
-version = "0.1.1"
+version = "1.0.0"
 description = "One-line AutoML: from idea to trained model using Hugging Face + AutoGluon"
-readme = "README.md"
+readme = "README_pypi.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [

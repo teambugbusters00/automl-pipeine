@@ -37,6 +37,8 @@ def test_gemma_router(monkeypatch):
     import sys
     from unittest.mock import MagicMock
     
+    monkeypatch.setenv("HF_TOKEN", "mocked_token")
+    
     mock_processor = MagicMock()
     mock_model = MagicMock()
     
@@ -82,6 +84,47 @@ def test_gemma_router(monkeypatch):
     assert "sentiment" in res.keywords
 
 
+def test_gemma_chat_agent(monkeypatch):
+    from autohf.agents.chat_agent import GemmaChatAgent
+    from unittest.mock import MagicMock
+    import sys
+
+    monkeypatch.setenv("HF_TOKEN", "mocked_token")
+
+    mock_processor = MagicMock()
+    mock_model = MagicMock()
+
+    mock_processor.from_pretrained.return_value = mock_processor
+    mock_model.from_pretrained.return_value = mock_model
+
+    # Mock processor call output
+    mock_inputs = MagicMock()
+    mock_inputs.get.return_value = mock_inputs
+    mock_inputs.shape = (1, 10)
+    mock_processor.return_value = mock_inputs
+
+    # Mock model generate return
+    mock_model.generate.return_value = [[1, 2, 3]]
+    mock_processor.batch_decode.return_value = ["Hello, I am Gemma."]
+    mock_processor.apply_chat_template.return_value = "formatted_prompt"
+
+    # Mock transformers
+    transformers_mock = MagicMock()
+    transformers_mock.AutoProcessor = mock_processor
+    transformers_mock.AutoModelForImageTextToText = mock_model
+    monkeypatch.setitem(sys.modules, "transformers", transformers_mock)
+
+    # Mock torch
+    torch_mock = MagicMock()
+    torch_mock.cuda.is_available.return_value = False
+    monkeypatch.setitem(sys.modules, "torch", torch_mock)
+
+    agent = GemmaChatAgent()
+    agent.load()
+    response = agent.generate("Who are you?", [])
+    assert response == "Hello, I am Gemma."
+
+
 if __name__ == "__main__":
     test_keyword_detection()
     test_fuzzy_fallback()
@@ -93,10 +136,18 @@ if __name__ == "__main__":
         def setitem(self, d, k, v):
             self.originals[(id(d), k)] = (d, d.get(k, None) if hasattr(d, "get") else None)
             d[k] = v
+        def setenv(self, k, v):
+            import os
+            self.originals[(id(os.environ), k)] = (os.environ, os.environ.get(k, None))
+            os.environ[k] = v
         def undo(self):
+            import os
             for (d_id, k), (d, val) in self.originals.items():
                 if val is None:
-                    d.pop(k, None)
+                    if d is os.environ:
+                        os.environ.pop(k, None)
+                    else:
+                        d.pop(k, None)
                 else:
                     d[k] = val
                     
@@ -104,6 +155,8 @@ if __name__ == "__main__":
     try:
         test_gemma_router(mp)
         print("Gemma router mock test passed!")
+        test_gemma_chat_agent(mp)
+        print("Gemma chat agent mock test passed!")
     finally:
         mp.undo()
         
