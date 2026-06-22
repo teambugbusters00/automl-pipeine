@@ -668,8 +668,15 @@ class AutoHFApp(App):
     # ------------------------------------------------------------------
 
     def on_mount(self) -> None:
-        """Focus the chat input on startup."""
+        """Focus the chat input on startup and initialize chat agent."""
         self.query_one("#chat-input", Input).focus()
+        from autohf.agents.chat_agent import GemmaChatAgent
+        self.chat_agent = GemmaChatAgent()
+        self.chat_history = []
+        try:
+            self.chat_agent.load()
+        except Exception:
+            pass
 
     @on(Input.Submitted, "#chat-input")
     def on_chat_submit(self, event: Input.Submitted) -> None:
@@ -813,6 +820,8 @@ class AutoHFApp(App):
         for child in list(chat_log.children):
             if "chat-msg" in " ".join(child.classes):
                 child.remove()
+        if hasattr(self, "chat_history"):
+            self.chat_history.clear()
         self._add_assistant_msg("[dim]Chat history cleared.[/dim]")
 
     # ------------------------------------------------------------------
@@ -1075,17 +1084,15 @@ class AutoHFApp(App):
         intent = self._detect_intent(lower)
 
         if intent == "explain":
-            # Check knowledge base first
             answer = self._check_knowledge_base(lower)
             if answer:
                 self._add_assistant_msg(answer)
                 return
-            # Try to explain the concept using task detection
-            self._run_explain(text)
+            self._run_chat_agent(text)
             return
 
         if intent == "compare":
-            self._run_compare(text)
+            self._run_chat_agent(text)
             return
 
         if intent == "models":
@@ -1104,8 +1111,8 @@ class AutoHFApp(App):
             self._run_search_from_text(query)
             return
 
-        # ----- Fallback: smart detect — auto-search if ML task detected -----
-        self._run_smart_detect(text)
+        # ----- Fallback: smart conversational LLM chat -----
+        self._run_chat_agent(text)
 
     def _detect_intent(self, text: str) -> Optional[str]:
         """Detect user intent from natural language."""
@@ -1377,6 +1384,24 @@ class AutoHFApp(App):
                 )
         except Exception as e:
             self.call_from_thread(self._add_assistant_msg, f"[bold red]❌ Error:[/bold red] {e}")
+
+    @work(thread=True)
+    def _run_chat_agent(self, text: str) -> None:
+        """Call the GemmaChatAgent to generate a conversational response."""
+        try:
+            response = self.chat_agent.generate(text, self.chat_history)
+            
+            # Update history
+            self.chat_history.append({"role": "user", "content": text})
+            self.chat_history.append({"role": "assistant", "content": response})
+            if len(self.chat_history) > 20:
+                self.chat_history = self.chat_history[-20:]
+                
+            self.call_from_thread(self._add_assistant_msg, response)
+        except Exception as e:
+            from loguru import logger
+            logger.warning("GemmaChatAgent failed: {}. Falling back to smart detect...", e)
+            self._run_smart_detect(text)
 
     @work(thread=True)
     def _run_explain(self, text: str) -> None:
