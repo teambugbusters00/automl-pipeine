@@ -12,12 +12,13 @@ from pydantic import BaseModel, Field
 
 from autohf.core.autohf import AutoHF
 from autohf.core.config import AutoHFConfig, DatasetCandidate
+from autohf import __version__
 
 
 app = FastAPI(
     title="🚀 AutoHF API",
     description="One-line AutoML API: from idea to trained model using Hugging Face + AutoGluon",
-    version="0.1.0",
+    version=__version__,
 )
 
 

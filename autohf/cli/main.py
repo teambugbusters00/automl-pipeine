@@ -217,13 +217,14 @@ def info() -> None:
     """ℹ️ Show AutoHF info, supported tasks, presets, and config."""
     from autohf.agents.task_agent import list_supported_tasks
     from autohf.core.config import AutoHFConfig, PRESET_CONFIGS
+    from autohf import __version__
 
     config = AutoHFConfig()
 
     console.print()
     console.print(
         Panel.fit(
-            "[bold cyan]🚀 AutoHF v0.1.0[/bold cyan]\n"
+            f"[bold cyan]🚀 AutoHF v{__version__}[/bold cyan]\n"
             "[dim]One-line AutoML: from idea to trained model[/dim]\n"
             "[dim]Powered by Hugging Face Hub + AutoGluon[/dim]",
             border_style="cyan",
