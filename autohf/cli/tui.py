@@ -819,8 +819,215 @@ class AutoHFApp(App):
     # Chat logic
     # ------------------------------------------------------------------
 
+    # Built-in ML knowledge base for answering questions without needing AI
+    _ML_KNOWLEDGE = {
+        "random forest": (
+            "🌲 [bold cyan]Random Forest[/bold cyan]\n\n"
+            "An ensemble learning method that builds multiple decision trees and merges them.\n\n"
+            "[bold]How it works:[/bold]\n"
+            "  1. Creates N decision trees on random subsets of data\n"
+            "  2. Each tree votes on the prediction\n"
+            "  3. Final prediction = majority vote (classification) or average (regression)\n\n"
+            "[bold]Best for:[/bold] Tabular data, classification, regression\n"
+            "[bold]Pros:[/bold] Resistant to overfitting, handles missing values, feature importance\n"
+            "[bold]Cons:[/bold] Slow on very large datasets, less interpretable than single tree\n\n"
+            "[bold]AutoHF Preset:[/bold] Available as [cyan]RF[/cyan] in AutoGluon. Use:\n"
+            '  [cyan]train tabular classification[/cyan]'
+        ),
+        "gradient boosting": (
+            "🚀 [bold cyan]Gradient Boosting (GBM/XGBoost/LightGBM/CatBoost)[/bold cyan]\n\n"
+            "Builds trees sequentially, each one correcting the errors of the previous.\n\n"
+            "[bold]Variants in AutoHF:[/bold]\n"
+            "  • [cyan]GBM[/cyan] — LightGBM (fast, memory efficient)\n"
+            "  • [cyan]XGB[/cyan] — XGBoost (robust, widely used)\n"
+            "  • [cyan]CAT[/cyan] — CatBoost (handles categorical features natively)\n\n"
+            "[bold]Best for:[/bold] Tabular data, competitions, structured data\n"
+            "[bold]Pros:[/bold] State-of-the-art accuracy on tabular data, fast training\n"
+            "[bold]Cons:[/bold] Can overfit with too many iterations, requires tuning\n\n"
+            "[bold]AutoHF Preset:[/bold] All three are used by default. Try:\n"
+            '  [cyan]train text classification[/cyan]'
+        ),
+        "knn": (
+            "📍 [bold cyan]K-Nearest Neighbors (KNN)[/bold cyan]\n\n"
+            "Classifies data points based on the K closest training examples.\n\n"
+            "[bold]How it works:[/bold]\n"
+            "  1. Given a new data point, find K nearest neighbors\n"
+            "  2. Majority vote among neighbors = prediction\n\n"
+            "[bold]Best for:[/bold] Small datasets, recommendation systems\n"
+            "[bold]Pros:[/bold] Simple, no training phase, works well with small data\n"
+            "[bold]Cons:[/bold] Slow at prediction time, sensitive to feature scaling\n\n"
+            "[bold]AutoHF variants:[/bold]\n"
+            "  • [cyan]KNN (Uniform)[/cyan] — equal weight to all neighbors\n"
+            "  • [cyan]KNN (Distance)[/cyan] — closer neighbors have more weight"
+        ),
+        "logistic regression": (
+            "📈 [bold cyan]Logistic Regression[/bold cyan]\n\n"
+            "A linear model for binary/multiclass classification.\n\n"
+            "[bold]How it works:[/bold]\n"
+            "  Uses sigmoid function to output probabilities between 0 and 1.\n\n"
+            "[bold]Best for:[/bold] Binary classification, text classification baselines\n"
+            "[bold]Pros:[/bold] Fast, interpretable, good baseline\n"
+            "[bold]Cons:[/bold] Assumes linear decision boundary"
+        ),
+        "neural network": (
+            "🧠 [bold cyan]Neural Networks[/bold cyan]\n\n"
+            "Multi-layer networks of connected nodes that learn complex patterns.\n\n"
+            "[bold]Types:[/bold]\n"
+            "  • [cyan]MLP[/cyan] — Feedforward network for tabular data\n"
+            "  • [cyan]CNN[/cyan] — Convolutional, best for images\n"
+            "  • [cyan]RNN/LSTM[/cyan] — Sequential data, time series\n"
+            "  • [cyan]Transformers[/cyan] — NLP, modern state-of-the-art\n\n"
+            "[bold]Best for:[/bold] Complex patterns, large datasets, NLP, vision\n"
+            "[bold]Pros:[/bold] Can learn any pattern, state-of-the-art performance\n"
+            "[bold]Cons:[/bold] Needs lots of data, GPU recommended, hard to interpret"
+        ),
+        "svm": (
+            "⚡ [bold cyan]Support Vector Machine (SVM)[/bold cyan]\n\n"
+            "Finds the optimal hyperplane that separates classes with maximum margin.\n\n"
+            "[bold]How it works:[/bold]\n"
+            "  Maximizes the distance between the decision boundary and nearest points.\n"
+            "  Uses kernel trick for non-linear boundaries.\n\n"
+            "[bold]Best for:[/bold] Small-medium datasets, text classification, high-dimensional data\n"
+            "[bold]Pros:[/bold] Effective in high dimensions, memory efficient\n"
+            "[bold]Cons:[/bold] Slow on large datasets, doesn't give probabilities by default"
+        ),
+        "clustering": (
+            "🔬 [bold cyan]Clustering Algorithms[/bold cyan]\n\n"
+            "Unsupervised learning — group data points without labels.\n\n"
+            "[bold]Popular algorithms:[/bold]\n"
+            "  • [cyan]K-Means[/cyan] — Partition into K groups by centroid distance\n"
+            "  • [cyan]DBSCAN[/cyan] — Density-based, finds arbitrary shapes\n"
+            "  • [cyan]Hierarchical[/cyan] — Tree of clusters (dendrograms)\n"
+            "  • [cyan]Gaussian Mixture[/cyan] — Probabilistic clustering\n\n"
+            "[bold]Best for:[/bold] Customer segmentation, anomaly detection, data exploration\n"
+            "[bold]Note:[/bold] AutoHF focuses on supervised learning (classification/regression)."
+        ),
+        "transformer": (
+            "🤖 [bold cyan]Transformer Architecture[/bold cyan]\n\n"
+            "The architecture behind GPT, BERT, T5, and modern LLMs.\n\n"
+            "[bold]Key innovation:[/bold] Self-attention mechanism\n"
+            "  Allows the model to look at all parts of input simultaneously.\n\n"
+            "[bold]Popular models:[/bold]\n"
+            "  • [cyan]BERT[/cyan] — Bidirectional encoder, great for classification\n"
+            "  • [cyan]GPT[/cyan] — Autoregressive decoder, text generation\n"
+            "  • [cyan]T5[/cyan] — Encoder-decoder, text-to-text\n"
+            "  • [cyan]Llama[/cyan] — Open-source LLM by Meta\n"
+            "  • [cyan]Gemma[/cyan] — Open-source LLM by Google\n\n"
+            "[bold]In AutoHF:[/bold] Use [cyan]search text-classification[/cyan] to find datasets,\n"
+            "then train with AutoGluon for tabular features."
+        ),
+        "accuracy": (
+            "📊 [bold cyan]Accuracy Metric[/bold cyan]\n\n"
+            "Percentage of correct predictions.\n"
+            "  [dim]Accuracy = Correct / Total[/dim]\n\n"
+            "[bold]When to use:[/bold] Balanced datasets\n"
+            "[bold]When NOT to use:[/bold] Imbalanced datasets (use F1 or balanced_accuracy)\n\n"
+            "[bold]Available metrics in AutoHF:[/bold]\n"
+            "  accuracy, balanced_accuracy, f1, f1_macro, f1_weighted,\n"
+            "  roc_auc, log_loss, precision, recall, mcc, rmse, mae, r²"
+        ),
+        "f1": (
+            "📊 [bold cyan]F1 Score[/bold cyan]\n\n"
+            "Harmonic mean of Precision and Recall.\n"
+            "  [dim]F1 = 2 × (Precision × Recall) / (Precision + Recall)[/dim]\n\n"
+            "[bold]Variants:[/bold]\n"
+            "  • [cyan]f1[/cyan] — Binary F1\n"
+            "  • [cyan]f1_macro[/cyan] — Average F1 across all classes (equal weight)\n"
+            "  • [cyan]f1_weighted[/cyan] — Weighted by class frequency\n\n"
+            "[bold]When to use:[/bold] Imbalanced datasets, when both false positives and false negatives matter"
+        ),
+        "overfitting": (
+            "📉 [bold cyan]Overfitting[/bold cyan]\n\n"
+            "When a model learns training data too well, including noise.\n\n"
+            "[bold]Signs:[/bold]\n"
+            "  • Training accuracy is very high, test accuracy is much lower\n"
+            "  • Model performs poorly on new data\n\n"
+            "[bold]Solutions:[/bold]\n"
+            "  • More training data\n"
+            "  • Regularization (L1, L2, dropout)\n"
+            "  • Early stopping\n"
+            "  • Simpler model\n"
+            "  • Cross-validation\n\n"
+            "[bold]In AutoHF:[/bold] AutoGluon handles this with:\n"
+            "  • Multiple model ensembling\n"
+            "  • Automatic early stopping\n"
+            "  • Stratified train/test split"
+        ),
+        "autogluon": (
+            "🏆 [bold cyan]AutoGluon[/bold cyan]\n\n"
+            "AutoML framework by Amazon that automatically trains and ensembles models.\n\n"
+            "[bold]What it does:[/bold]\n"
+            "  1. Trains multiple model types (GBM, XGB, CAT, RF, KNN, NN)\n"
+            "  2. Automatically tunes hyperparameters\n"
+            "  3. Stacks and ensembles the best models\n"
+            "  4. Returns a leaderboard of all trained models\n\n"
+            "[bold]AutoHF presets:[/bold]\n"
+            "  • [cyan]quick_prototype[/cyan] — 60s, fast testing\n"
+            "  • [cyan]medium_quality[/cyan] — 5min, good balance\n"
+            "  • [cyan]high_quality[/cyan] — 10min, better results\n"
+            "  • [cyan]best_quality[/cyan] — 1hr, maximum accuracy"
+        ),
+        "classification": (
+            "🏷️ [bold cyan]Classification[/bold cyan]\n\n"
+            "Predict a discrete category/label for each data point.\n\n"
+            "[bold]Types:[/bold]\n"
+            "  • [cyan]Binary[/cyan] — Two classes (spam/not spam, positive/negative)\n"
+            "  • [cyan]Multiclass[/cyan] — Multiple classes (emotions, topics, intents)\n\n"
+            "[bold]Common tasks:[/bold]\n"
+            "  sentiment analysis, spam detection, topic classification,\n"
+            "  intent detection, NER, emotion detection\n\n"
+            "[bold]Try it:[/bold]\n"
+            '  [cyan]search sentiment analysis[/cyan]\n'
+            '  [cyan]train spam detection[/cyan]'
+        ),
+        "regression": (
+            "📈 [bold cyan]Regression[/bold cyan]\n\n"
+            "Predict a continuous numerical value.\n\n"
+            "[bold]Examples:[/bold]\n"
+            "  • House price prediction\n"
+            "  • Stock price forecasting\n"
+            "  • Temperature prediction\n"
+            "  • Sales forecasting\n\n"
+            "[bold]Metrics:[/bold] RMSE, MAE, R²\n\n"
+            "[bold]Try it:[/bold]\n"
+            '  [cyan]train tabular regression[/cyan]'
+        ),
+    }
+
+    # Intent patterns for smart routing
+    _INTENT_PATTERNS = {
+        "search": [
+            "find", "search", "look for", "get", "show me", "list",
+            "discover", "explore", "browse", "fetch", "what datasets",
+            "which datasets", "find me", "find a dataset", "dataset for",
+            "datasets for", "data for",
+        ],
+        "train": [
+            "train", "build", "create a model", "make a model", "fit",
+            "build a model", "train a model", "create model", "start training",
+            "run training", "fine-tune", "finetune",
+        ],
+        "compare": [
+            "compare", "vs", "versus", "difference between", "which is better",
+            "recommend", "suggest", "best model", "best algorithm",
+            "compare models", "which model",
+        ],
+        "explain": [
+            "what is", "what are", "explain", "how does", "how do",
+            "tell me about", "describe", "define", "meaning of",
+            "what's", "whats",
+        ],
+        "models": [
+            "models for", "recommend model", "find models", "show models",
+            "which models", "top models", "best models", "model for",
+        ],
+    }
+
     def _handle_user_message(self, text: str) -> None:
-        """Process a user message and route to the appropriate action."""
+        """Process a user message and route to the appropriate action.
+        
+        Smart routing: understands natural language and auto-takes action.
+        """
         # Hide welcome on first message
         try:
             welcome = self.query_one("#welcome-section")
@@ -832,30 +1039,112 @@ class AutoHFApp(App):
 
         lower = text.lower().strip()
 
-        # Route commands
+        # ----- Exact commands -----
         if lower in ("help", "?", "/help"):
             self.action_show_help()
-        elif lower in ("info", "/info"):
+            return
+        if lower in ("info", "/info"):
             self._show_info()
-        elif lower.startswith("search ") or lower.startswith("find "):
-            query = text.split(maxsplit=1)[1] if " " in text else ""
-            self._run_search_from_text(query)
-        elif lower.startswith("train "):
-            query = text.split(maxsplit=1)[1] if " " in text else ""
-            self._run_train_from_text(query)
-        elif lower.startswith("route "):
-            query = text.split(maxsplit=1)[1] if " " in text else ""
-            self._run_route(query)
-        elif lower in ("version", "/version"):
+            return
+        if lower in ("version", "/version"):
             from autohf import __version__
             self._add_assistant_msg(f"[bold cyan]AutoHF v{__version__}[/bold cyan]")
-        elif lower in ("clear", "/clear"):
+            return
+        if lower in ("clear", "/clear"):
             self.action_clear_chat()
-        elif lower in ("quit", "exit", "/quit"):
+            return
+        if lower in ("quit", "exit", "/quit"):
             self.exit()
-        else:
-            # Try to detect if it's a task description
-            self._run_smart_detect(text)
+            return
+
+        # ----- Explicit prefix commands -----
+        if lower.startswith("search ") or lower.startswith("find "):
+            query = text.split(maxsplit=1)[1] if " " in text else ""
+            self._run_search_from_text(query)
+            return
+        if lower.startswith("train "):
+            query = text.split(maxsplit=1)[1] if " " in text else ""
+            self._run_train_from_text(query)
+            return
+        if lower.startswith("route "):
+            query = text.split(maxsplit=1)[1] if " " in text else ""
+            self._run_route(query)
+            return
+
+        # ----- Smart intent detection -----
+        intent = self._detect_intent(lower)
+
+        if intent == "explain":
+            # Check knowledge base first
+            answer = self._check_knowledge_base(lower)
+            if answer:
+                self._add_assistant_msg(answer)
+                return
+            # Try to explain the concept using task detection
+            self._run_explain(text)
+            return
+
+        if intent == "compare":
+            self._run_compare(text)
+            return
+
+        if intent == "models":
+            # Extract the task from the query
+            query = self._extract_task_query(text)
+            self._run_smart_model_search(query)
+            return
+
+        if intent == "train":
+            query = self._extract_task_query(text)
+            self._run_train_from_text(query)
+            return
+
+        if intent == "search":
+            query = self._extract_task_query(text)
+            self._run_search_from_text(query)
+            return
+
+        # ----- Fallback: smart detect — auto-search if ML task detected -----
+        self._run_smart_detect(text)
+
+    def _detect_intent(self, text: str) -> Optional[str]:
+        """Detect user intent from natural language."""
+        for intent, patterns in self._INTENT_PATTERNS.items():
+            for pattern in patterns:
+                if pattern in text:
+                    return intent
+        return None
+
+    def _extract_task_query(self, text: str) -> str:
+        """Extract the ML task/topic from a natural language query."""
+        lower = text.lower()
+        # Remove common filler words
+        removals = [
+            "find me", "find a dataset for", "find dataset for",
+            "find a", "find", "search for", "search", "show me",
+            "get me", "get", "list", "look for", "i want to",
+            "i need", "can you", "please", "help me",
+            "train a model for", "train model for", "build a model for",
+            "build model for", "create a model for", "train a", "train",
+            "build a", "build", "create a", "create",
+            "models for", "model for", "recommend model for",
+            "recommend models for", "suggest model for",
+            "best model for", "top models for",
+            "datasets for", "dataset for", "data for",
+            "a dataset for", "the dataset for",
+        ]
+        result = lower
+        for r in removals:
+            result = result.replace(r, "")
+        result = result.strip().strip('"').strip("'").strip()
+        return result if result else text
+
+    def _check_knowledge_base(self, text: str) -> Optional[str]:
+        """Check if the question matches any built-in ML knowledge."""
+        for key, answer in self._ML_KNOWLEDGE.items():
+            if key in text:
+                return answer
+        return None
 
     def _add_user_msg(self, text: str) -> None:
         chat_log = self.query_one("#chat-log", VerticalScroll)
@@ -868,6 +1157,7 @@ class AutoHFApp(App):
         msg = Static(f"[bold green]AutoHF >[/bold green] {text}", classes="chat-msg-assistant")
         chat_log.mount(msg)
         msg.scroll_visible()
+
 
     # ------------------------------------------------------------------
     # Pipeline Workers (async background tasks)
@@ -1001,35 +1291,236 @@ class AutoHFApp(App):
 
     @work(thread=True)
     def _run_smart_detect(self, text: str) -> None:
-        """Try to intelligently handle arbitrary text."""
+        """Smart fallback: detect ML task and AUTO-SEARCH datasets + models."""
         from autohf.agents.task_agent import detect_task
+        from autohf.agents.dataset_agent import find_models
 
         try:
+            # Check knowledge base first
+            answer = self._check_knowledge_base(text.lower())
+            if answer:
+                self.call_from_thread(self._add_assistant_msg, answer)
+                return
+
             res = detect_task(text, router="keyword")
 
-            if res.confidence >= 0.7:
-                result = (
-                    f"🎯 I detected your task as [bold]{res.task_label}[/bold] "
-                    f"([cyan]{res.task_type}[/cyan], confidence: {res.confidence})\n\n"
-                    f"What would you like to do?\n"
-                    f"  • Type [cyan]\"search {text}\"[/cyan] to find datasets\n"
-                    f"  • Type [cyan]\"train {text}\"[/cyan] to run the full training pipeline\n"
-                    f"  • Click [bold]🔎 SEARCH DATASETS[/bold] in the sidebar"
-                )
-                self.call_from_thread(self._add_assistant_msg, result)
-            else:
+            if res.confidence >= 0.5:
+                # HIGH CONFIDENCE: Auto-search datasets AND models
                 self.call_from_thread(
                     self._add_assistant_msg,
-                    f"🤔 I'm not sure what you mean by [cyan]'{text}'[/cyan].\n\n"
-                    f"Try:\n"
-                    f'  • [cyan]"search sentiment analysis"[/cyan] — find datasets\n'
-                    f'  • [cyan]"train NER"[/cyan] — train a model\n'
-                    f'  • [cyan]"route spam detection"[/cyan] — detect task type\n'
-                    f'  • [cyan]"info"[/cyan] — see all supported tasks\n'
-                    f'  • [cyan]"help"[/cyan] — show all commands',
+                    f"🎯 Detected: [bold]{res.task_label}[/bold] "
+                    f"([cyan]{res.task_type}[/cyan], confidence: {res.confidence})\n\n"
+                    f"[dim]Searching datasets and models...[/dim]"
+                )
+
+                # Auto-search datasets
+                try:
+                    from autohf.core.autohf import AutoHF
+                    from autohf.core.config import AutoHFConfig
+
+                    config = AutoHFConfig(router="keyword")
+                    hf = AutoHF(config=config)
+                    ranked = hf.search(text, top_n=5)
+
+                    if ranked:
+                        lines = [f"\n[bold]📦 Top Datasets:[/bold]"]
+                        for i, ds in enumerate(ranked[:5], 1):
+                            lines.append(
+                                f"  {i}. [cyan]{ds.dataset_id}[/cyan]  "
+                                f"↓{ds.downloads:,}  ♥{ds.likes:,}  "
+                                f"score=[magenta]{ds.score:.4f}[/magenta]"
+                            )
+                        self.call_from_thread(self._add_assistant_msg, "\n".join(lines))
+                except Exception:
+                    pass
+
+                # Auto-search models
+                try:
+                    models = find_models(res.task_type, limit=5)
+                    if models:
+                        lines = [f"\n[bold]🤖 Top Models:[/bold]"]
+                        for i, m in enumerate(models[:5], 1):
+                            lines.append(
+                                f"  {i}. [cyan]{m['model_id']}[/cyan]  "
+                                f"↓{m['downloads']:,}  ♥{m['likes']:,}"
+                            )
+                        self.call_from_thread(self._add_assistant_msg, "\n".join(lines))
+                except Exception:
+                    pass
+
+                # Offer next actions
+                self.call_from_thread(
+                    self._add_assistant_msg,
+                    f"\n[bold]What's next?[/bold]\n"
+                    f"  • Type [cyan]train {text}[/cyan] to start training\n"
+                    f"  • Type [cyan]search {text}[/cyan] to see more datasets\n"
+                    f"  • Adjust settings in the sidebar → click [bold]▶ RUN FULL PIPELINE[/bold]"
+                )
+            else:
+                # LOW CONFIDENCE: Give helpful suggestions
+                self.call_from_thread(
+                    self._add_assistant_msg,
+                    f"🤔 I understand you're interested in [cyan]'{text}'[/cyan], "
+                    f"but I'm not 100% sure of the ML task type.\n\n"
+                    f"Here's what you can try:\n\n"
+                    f"[bold]🔍 Search:[/bold]\n"
+                    f'  [cyan]search {text}[/cyan]\n\n'
+                    f"[bold]❓ Ask:[/bold]\n"
+                    f'  [cyan]what is random forest[/cyan]\n'
+                    f'  [cyan]explain gradient boosting[/cyan]\n'
+                    f'  [cyan]what is classification[/cyan]\n\n'
+                    f"[bold]🏋️ Train:[/bold]\n"
+                    f'  [cyan]train sentiment analysis[/cyan]\n'
+                    f'  [cyan]train spam detection[/cyan]\n\n'
+                    f"[bold]📋 Info:[/bold]\n"
+                    f'  [cyan]info[/cyan] — see all 12 supported ML tasks',
                 )
         except Exception as e:
             self.call_from_thread(self._add_assistant_msg, f"[bold red]❌ Error:[/bold red] {e}")
+
+    @work(thread=True)
+    def _run_explain(self, text: str) -> None:
+        """Explain an ML concept using task detection + knowledge base."""
+        from autohf.agents.task_agent import detect_task
+
+        try:
+            # Try task detection to give context
+            cleaned = self._extract_task_query(text)
+            res = detect_task(cleaned, router="keyword")
+
+            if res.confidence >= 0.5:
+                explanation = (
+                    f"📚 [bold cyan]{res.task_label}[/bold cyan]\n\n"
+                    f"[bold]Task Type:[/bold] {res.task_type}\n"
+                    f"[bold]Problem Type:[/bold] {res.problem_type}\n"
+                    f"[bold]Keywords:[/bold] {', '.join(res.keywords)}\n\n"
+                    f"[bold]What this means:[/bold]\n"
+                    f"  This is a {'classification' if 'classification' in res.task_type else 'generation/regression'} task.\n"
+                    f"  AutoHF can search datasets on Hugging Face Hub and train models using AutoGluon.\n\n"
+                    f"[bold]Algorithms used:[/bold]\n"
+                    f"  • LightGBM (gradient boosting)\n"
+                    f"  • XGBoost\n"
+                    f"  • CatBoost\n"
+                    f"  • Random Forest\n"
+                    f"  • Extra Trees\n"
+                    f"  • K-Nearest Neighbors\n\n"
+                    f"[bold]Try it:[/bold]\n"
+                    f"  [cyan]search {cleaned}[/cyan]\n"
+                    f"  [cyan]train {cleaned}[/cyan]"
+                )
+                self.call_from_thread(self._add_assistant_msg, explanation)
+            else:
+                self.call_from_thread(
+                    self._add_assistant_msg,
+                    f"📚 I don't have detailed info about [cyan]'{cleaned}'[/cyan] yet.\n\n"
+                    f"[bold]I can explain these ML concepts:[/bold]\n"
+                    f"  • [cyan]what is random forest[/cyan]\n"
+                    f"  • [cyan]what is gradient boosting[/cyan]\n"
+                    f"  • [cyan]explain neural network[/cyan]\n"
+                    f"  • [cyan]what is KNN[/cyan]\n"
+                    f"  • [cyan]what is SVM[/cyan]\n"
+                    f"  • [cyan]explain classification[/cyan]\n"
+                    f"  • [cyan]explain regression[/cyan]\n"
+                    f"  • [cyan]what is overfitting[/cyan]\n"
+                    f"  • [cyan]what is transformer[/cyan]\n"
+                    f"  • [cyan]what is accuracy[/cyan]\n"
+                    f"  • [cyan]what is f1 score[/cyan]\n"
+                    f"  • [cyan]what is autogluon[/cyan]\n"
+                    f"  • [cyan]what is clustering[/cyan]\n"
+                    f"  • [cyan]what is logistic regression[/cyan]"
+                )
+        except Exception as e:
+            self.call_from_thread(self._add_assistant_msg, f"[bold red]❌ Error:[/bold red] {e}")
+
+    def _run_compare(self, text: str) -> None:
+        """Compare ML algorithms or models."""
+        lower = text.lower()
+
+        # Check for specific algorithm comparisons
+        algorithms = {
+            "random forest": "RF",
+            "gradient boosting": "GBM",
+            "xgboost": "XGB",
+            "catboost": "CAT",
+            "lightgbm": "GBM",
+            "knn": "KNN",
+            "neural network": "NN",
+            "svm": "SVM",
+            "logistic regression": "LR",
+        }
+
+        found = [name for name in algorithms if name in lower]
+
+        if len(found) >= 2:
+            comparison = (
+                f"⚖️ [bold cyan]Comparison: {' vs '.join(found)}[/bold cyan]\n\n"
+            )
+            for algo in found:
+                kb_answer = self._check_knowledge_base(algo)
+                if kb_answer:
+                    comparison += kb_answer + "\n\n" + "─" * 50 + "\n\n"
+            comparison += (
+                f"[bold]💡 Recommendation:[/bold]\n"
+                f"  AutoGluon trains ALL algorithms and picks the best one automatically!\n"
+                f"  Just type [cyan]train <your task>[/cyan] and let AutoHF handle it."
+            )
+            self._add_assistant_msg(comparison)
+        else:
+            self._add_assistant_msg(
+                f"⚖️ [bold cyan]Model Comparison[/bold cyan]\n\n"
+                f"AutoGluon automatically trains and compares these algorithms:\n\n"
+                f"  [cyan]GBM[/cyan]  (LightGBM)       — Fast, accurate on tabular data\n"
+                f"  [cyan]XGB[/cyan]  (XGBoost)        — Robust, widely used\n"
+                f"  [cyan]CAT[/cyan]  (CatBoost)       — Handles categorical features\n"
+                f"  [cyan]RF[/cyan]   (Random Forest)   — Resistant to overfitting\n"
+                f"  [cyan]XT[/cyan]   (Extra Trees)     — Even more randomized than RF\n"
+                f"  [cyan]KNN[/cyan]  (K-Nearest)       — Simple, effective for small data\n\n"
+                f"[bold]AutoGluon runs all of them and creates a leaderboard![/bold]\n\n"
+                f"To see this in action, type:\n"
+                f"  [cyan]train sentiment analysis[/cyan]\n"
+                f"  [cyan]train spam detection[/cyan]\n\n"
+                f"Want to compare specific algorithms? Try:\n"
+                f"  [cyan]compare random forest vs gradient boosting[/cyan]\n"
+                f"  [cyan]compare knn vs svm[/cyan]"
+            )
+
+    @work(thread=True)
+    def _run_smart_model_search(self, query: str) -> None:
+        """Smart model search from natural language."""
+        from autohf.agents.task_agent import detect_task
+        from autohf.agents.dataset_agent import find_models
+
+        self.call_from_thread(self._add_assistant_msg, f"🤖 Finding the best models for [cyan]'{query}'[/cyan]...")
+
+        try:
+            res = detect_task(query, router="keyword")
+            models = find_models(res.task_type, limit=10)
+
+            if models:
+                lines = [
+                    f"[bold green]✓ Top models for {res.task_label} ({res.task_type}):[/bold green]\n"
+                ]
+                for i, m in enumerate(models, 1):
+                    lines.append(
+                        f"  [bold]{i}.[/bold] [cyan]{m['model_id']}[/cyan]  "
+                        f"↓{m['downloads']:,}  ♥{m['likes']:,}"
+                    )
+                lines.append(
+                    f"\n[bold]💡 AutoHF also trains these algorithms locally:[/bold]\n"
+                    f"  GBM, XGBoost, CatBoost, Random Forest, Extra Trees, KNN\n"
+                    f"  → Type [cyan]train {query}[/cyan] to train automatically"
+                )
+                self.call_from_thread(self._add_assistant_msg, "\n".join(lines))
+            else:
+                self.call_from_thread(
+                    self._add_assistant_msg,
+                    f"⚠️ No HF models found for '{res.task_type}'.\n\n"
+                    f"But AutoHF can still train locally using AutoGluon!\n"
+                    f"  Type [cyan]train {query}[/cyan]"
+                )
+        except Exception as e:
+            self.call_from_thread(self._add_assistant_msg, f"[bold red]❌ Error:[/bold red] {e}")
+
 
     @work(thread=True)
     def _run_train_from_text(self, query: str) -> None:
