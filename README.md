@@ -25,6 +25,7 @@ AutoHF is an autonomous machine learning pipeline that takes a natural language 
 - **Autonomous Dataset Discovery:** Searches the Hugging Face Hub for relevant datasets using multi-strategy search.
 - **Intelligent Ranking:** Ranks datasets based on quality signals like downloads, likes, and metadata completeness.
 - **Automated Training:** Leverages AutoGluon to train high-quality models with minimal configuration.
+- **Interactive TUI Dashboard:** A rich Terminal UI (`autohf ui`) featuring a smart chatbot assistant integrated with Google Gemini/Gemma, local Ollama (fully offline), or HF Inference API. Includes live progress, logging, and an advanced settings sidebar.
 - **Agentic Architecture:** Inspired by patterns from **AutoGen**, **LangGraph**, and **OpenHands** for robust state management and collaboration.
 
 ---
@@ -119,7 +120,10 @@ pip install "autohf[train]"
 Train a model with a single command:
 
 ```bash
-# Quick prototype
+# Launch the interactive Terminal UI (TUI)
+autohf ui
+
+# Quick prototype via CLI command
 autohf train "sentiment analysis"
 
 # Higher quality training

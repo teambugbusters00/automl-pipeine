@@ -25,7 +25,7 @@ from autohf.core.autohf import AutoHF
 from autohf.core.config import AutoHFConfig, TrainResult, DatasetCandidate, PipelineState
 from autohf.agents.chat_agent import GemmaChatAgent
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 __all__ = [
     "AutoHF",
     "AutoHFConfig",

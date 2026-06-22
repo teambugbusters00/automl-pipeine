@@ -12,6 +12,7 @@ AutoHF is an autonomous machine learning pipeline that takes a natural language 
 - **Autonomous Dataset Discovery:** Searches the Hugging Face Hub for relevant datasets using multi-strategy search.
 - **Intelligent Ranking:** Ranks datasets based on quality signals like downloads, likes, and metadata completeness.
 - **Automated Training:** Leverages AutoGluon to train high-quality models with minimal configuration.
+- **Interactive TUI Dashboard:** A rich Terminal UI (`autohf ui`) featuring a smart chatbot assistant integrated with Google Gemini/Gemma, local Ollama (fully offline), or HF Inference API. Includes live progress, logging, and an advanced settings sidebar.
 - **Agentic Architecture:** Inspired by patterns from AutoGen, LangGraph, and OpenHands for robust state management and collaboration.
 - **Interactive Gemma Chat:** Run a single prompt or start an interactive chat session with local Gemma models.
 
@@ -53,7 +54,13 @@ You can also list top models for the task:
 autohf search "question answering" --models
 ```
 
-### Step 3: Interactive local Gemma Chat
+### Step 3: Launch the Interactive TUI Dashboard
+To launch the interactive dashboard featuring the Gemma/Gemini smart chatbot, live pipeline logs, and the settings sidebar:
+```bash
+autohf ui
+```
+
+### Step 4: Interactive local Gemma Chat
 To query or chat with a local Gemma model (such as `google/gemma-4-E2B-it`):
 ```bash
 # Start an interactive multi-turn chat REPL session
@@ -64,7 +71,7 @@ autohf chat "Explain AutoML in one sentence."
 ```
 *Note: Make sure your `HF_TOKEN` environment variable is set to download the model.*
 
-### Step 4: Show package info and supported task types
+### Step 5: Show package info and supported task types
 ```bash
 autohf info
 ```
