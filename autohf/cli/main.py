@@ -399,7 +399,24 @@ def chat(
 @app.command()
 def version() -> None:
     """ℹ️ Show AutoHF version."""
-    console.print("[bold cyan]AutoHF v1.0.0[/bold cyan]")
+    from autohf import __version__
+    console.print(f"[bold cyan]AutoHF v{__version__}[/bold cyan]")
+
+
+@app.command()
+def ui() -> None:
+    """🖥️ Launch the interactive AutoHF Terminal UI.
+
+    Opens a rich, interactive dashboard with:
+      - Chat panel for natural-language ML commands
+      - Advanced options for dataset, model, training, and output
+      - Supports all ML task types and algorithms
+
+    Examples:
+      autohf ui
+    """
+    from autohf.cli.tui import run_tui
+    run_tui()
 
 
 # ---------------------------------------------------------------------------
